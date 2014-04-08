@@ -101,7 +101,6 @@ timer_sleep (int64_t ticks)
   int64_t start = timer_ticks ();
 	int64_t curr_wait_time = start+ticks;
   ASSERT (intr_get_level () == INTR_ON);
-	printf("timer_sleep\n");
   thread_sleep(curr_wait_time);
 }
 
@@ -182,8 +181,8 @@ static void
 timer_interrupt (struct intr_frame *args UNUSED)
 {
   ticks++;
-	//from_wait_to_ready(ticks);
-	timer_wakeup(ticks);
+	from_wait_to_ready(ticks);
+	//timer_wakeup(ticks);
   thread_tick ();
 }
 

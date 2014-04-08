@@ -330,110 +330,39 @@ thread_yield (void)
 void
 thread_sleep (int64_t curr_wait_time)
 {
-	//printf("thread sleep start!\n");
-	//printf("%d\n",curr_wait_time);
 	struct thread *cur = thread_current ();
 	enum intr_level old_level;
 	
 	int64_t start = timer_ticks ();
   old_level = intr_disable ();
-
 	cur->wake_time = curr_wait_time;
-	list_insert_ordered (&wait_list, &cur->elem, wake_priority, NULL);
+	list_push_back(&wait_list, &cur->elem);	
 	thread_block();
 	intr_set_level (old_level);
 }
 /* OS project */
 static bool
-wake_priority (const struct list_elem* a_, const struct list_elem* b_, 
+wake_time_lessfn (const struct list_elem* a, const struct list_elem* b, 
                void* aux UNUSED) 
 {
-  const struct thread* a = list_entry(a_, struct thread, elem);
-  const struct thread* b = list_entry(b_, struct thread, elem);
-
-    //return a->wake_time < b-> wake_time;
-if (a->wake_time < b->wake_time)
-    return true;
-  else if (a->wake_time == b->wake_time)
-  {
-    if(a->priority > b->priority)
-      return false;
-    else
-      return true;
-  }
-  else
-    return false; 
-}
-void
-timer_wakeup (int64_t ticks)
-{
-  struct thread* t;
-    
-  while (list_size(&wait_list))
-  {
-    t = list_entry (list_front (&wait_list), struct thread, elem);
-     
-    if (ticks >= t->wake_time)
-    {
-      list_pop_front (&wait_list);
-      thread_unblock (t);
-    }
-    else
-    {
-      break;
-    }   
-  }
+  const struct thread* less = list_entry(a, struct thread, elem);
+  const struct thread* more = list_entry(b, struct thread, elem);
+    return less->wake_time < more-> wake_time;
 }
 /* OS project */
 void
 from_wait_to_ready (int64_t ticks)
 {
   struct thread* wait_min;
-	struct thread* curr_pivot;
-	struct list_elem* curr;
-	struct list_elem* min_elem;
-	struct list_elem* a;
-	struct list_elem* b;
-	struct list_elem t;
-  int size_of_waiting;
-	int cnt;
-	while(1){
-		if(list_empty(&wait_list)){
-			break;	
-		}
-		else{
-			size_of_waiting = list_size(&wait_list);
-			curr = list_front (&wait_list);
-			min_elem = curr;
-			wait_min = list_entry (curr, struct thread, elem);	
-			/* find the smallest wait time element and swap that element with first element of the list.
-				the wait_min is thread of first element of list. */
-			for(cnt =0; cnt<size_of_waiting; cnt++){
-				curr = list_next(curr);
-				if(curr!=list_end(&wait_list)){
-					curr_pivot = list_entry (curr, struct thread, elem);
-					if(curr_pivot->wake_time < wait_min->wake_time){
-							min_elem = curr;
-							wait_min = list_entry (min_elem, struct thread, elem);	
-					}		
-				}
-				else{
-					break;
-				}
-				a = min_elem;
-				b = list_front(&wait_list);
-				t = *a;
-				*a = *b;
-				*b = t;
-			}
-			/* pop element first of list and thread unblock */		
-			if(wait_min->wake_time <= ticks){
-				list_pop_front(&wait_list);
-				thread_unblock(wait_min);
-			}else{
-				break;
-			}
-		}
+	while(!list_empty(&wait_list)){
+		list_sort(&wait_list,wake_time_lessfn,NULL);	
+		wait_min = list_entry(list_front(&wait_list), struct thread, elem);
+		if(wait_min->wake_time <= ticks){
+			list_pop_front(&wait_list);
+			thread_unblock(wait_min);		
+		}else{
+			break;
+		}				
 	}
 }
 /* Invoke function "func" on all threads, passing along "aux".

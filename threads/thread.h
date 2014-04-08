@@ -132,7 +132,7 @@ void thread_sleep (int64_t curr_wait_time);
 /* OS project */
 void from_wait_to_ready (int64_t ticks);
 void timer_wakeup (int64_t ticks);
-static bool wake_priority (const struct list_elem* a_, const struct list_elem* b_, void* aux UNUSED); 
+static bool wake_time_lessfn (const struct list_elem* a_, const struct list_elem* b_, void* aux UNUSED); 
 
 /* Performs some operation on thread t, given auxiliary data AUX. */
 typedef void thread_action_func (struct thread *t, void *aux);
